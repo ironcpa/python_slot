@@ -16,16 +16,14 @@ class Payline():
         return "Payline"
     def __repr__(self):
         return str(self.id) + str(self.reelRows)
-        
-class SlotMachine:
+
+class SlotSetting:
     def __init__(self):
-        #self.__loadReels()
-        self.reels = []
         self.paylines = []
-        self.__loadSettings()
-        self.reelSize = len(self.reels)
+        self.reels = []
+        self.readSettingFile()
         
-    def __loadSettings(self):
+    def readSettingFile(self):
         infile = open('./machine_setting.txt', 'r')
         currSection = Section.none
         for line in infile:
@@ -52,22 +50,20 @@ class SlotMachine:
             return Section.none
 
     def readSection(self, line, section):
-        print( 'readSection------------')
         if section == Section.symbol:
             pass
         elif section == Section.payline:
-            self.__loadPaylines(line)
+            self.readPaylines(line)
         elif section == Section.reels:
-            self.__loadReels(line)
+            self.readReels(line)
         
-    def __loadPaylines(self, line):
+    def readPaylines(self, line):
         keyVal = line.split('=')
-        print( 'payline', keyVal )
         paylineId = keyVal[0]
         reelRows = keyVal[1]
         self.paylines.append(Payline(paylineId, reelRows))
         
-    def __loadReels(self, line):
+    def readReels(self, line):
         reel = 0
         symbol = ''
         multi = 0
@@ -81,10 +77,14 @@ class SlotMachine:
                 if reel >= len(self.reels):
                     self.reels.append([])
                 self.reels[reel].append((symbol, multi))
-        print('self.reels', self.reels)
+        
+class SlotMachine:
+    def __init__(self):
+        self.settings = SlotSetting()
+        self.reelSize = len(self.settings.reels)
         
     def __rowLen(self, reel):
-        return len(self.reels[reel])
+        return len(self.settings.reels[reel])
 
     def createRndStop(self):
         randStop = []
@@ -98,9 +98,9 @@ class SlotMachine:
         symbolset = []
         for r in range(0, len(stops)):
             reelRow = []
-            reelRow.append(self.reels[r][stops[r]][0])
-            reelRow.append(self.reels[r][(stops[r] + 1) % self.__rowLen(r)][0])
-            reelRow.append(self.reels[r][(stops[r] + 2) % self.__rowLen(r)][0])
+            reelRow.append(self.settings.reels[r][stops[r]][0])
+            reelRow.append(self.settings.reels[r][(stops[r] + 1) % self.__rowLen(r)][0])
+            reelRow.append(self.settings.reels[r][(stops[r] + 2) % self.__rowLen(r)][0])
             symbolset.append(reelRow)
 
         print('symbolset', symbolset)
