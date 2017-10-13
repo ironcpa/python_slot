@@ -1,36 +1,86 @@
 #slot machine
 from random import randrange
+from enum import Enum
 
+class Section(Enum):
+    none = 0
+    symbol = 1
+    payline = 2
+    reels = 3
+
+class Payline():
+    def __init__(self, id, *reelRows):
+        self.id = 0;
+        self.reelRows = reelRows
+    def __str__(self):
+        return "Payline"
+    def __repr__(self):
+        return str(self.id) + str(self.reelRows)
+        
 class SlotMachine:
     def __init__(self):
-        self.__loadReels()
-        self.reelSize = len(self.reels)
-
-    def __loadReels(self):
+        #self.__loadReels()
         self.reels = []
+        self.paylines = []
+        self.__loadSettings()
+        self.reelSize = len(self.reels)
+        
+    def __loadSettings(self):
         infile = open('./machine_setting.txt', 'r')
-        isInReelsSection = False
+        currSection = Section.none
         for line in infile:
-            if line.startswith('//'):
-                continue
             s = line.rstrip()
-            if isInReelsSection == False and s == '[Reels]':
-                isInReelsSection = True
+            if len(s) == 0 or line.startswith('//'):
                 continue
-            if isInReelsSection:
-                reel = 0
-                symbol = ''
-                multi = 0
-                row = s.split()
-                for n in range(0, len(row)):
-                    if n % 2 == 0:
-                        symbol = row[n]
-                    else:
-                        reel = n // 2
-                        multi = row[n]
-                        if reel >= len(self.reels):
-                            self.reels.append([])
-                        self.reels[reel].append((symbol, multi))
+            section = self.resolveSection(s)
+            if section != Section.none:
+                currSection = section
+            else:
+                self.readSection(s, currSection)
+
+        print('paylines', self.paylines)
+        print('self.reels', self.reels)
+
+    def resolveSection(self, line):
+        if line == '[Symbols]':
+            return Section.symbol
+        elif line == '[Paylines]':
+            return Section.payline
+        elif line == '[Reels]':
+            return Section.reels
+        else:
+            return Section.none
+
+    def readSection(self, line, section):
+        print( 'readSection------------')
+        if section == Section.symbol:
+            pass
+        elif section == Section.payline:
+            self.__loadPaylines(line)
+        elif section == Section.reels:
+            self.__loadReels(line)
+        
+    def __loadPaylines(self, line):
+        keyVal = line.split('=')
+        print( 'payline', keyVal )
+        paylineId = keyVal[0]
+        reelRows = keyVal[1]
+        self.paylines.append(Payline(paylineId, reelRows))
+        
+    def __loadReels(self, line):
+        reel = 0
+        symbol = ''
+        multi = 0
+        row = line.split()
+        for n in range(0, len(row)):
+            if n % 2 == 0:
+                symbol = row[n]
+            else:
+                reel = n // 2
+                multi = row[n]
+                if reel >= len(self.reels):
+                    self.reels.append([])
+                self.reels[reel].append((symbol, multi))
         print('self.reels', self.reels)
         
     def __rowLen(self, reel):

@@ -6,6 +6,20 @@ M2 = "Mid Level 2"
 L1 = "Low Lev3l 1"
 L2 = "Low Level 2"
 
+[Paylines]
+// position referance
+// setting file : for every reels
+//  0
+//	1
+//	2
+// inside machine
+//	0	3	6	9	12
+//	1	4	7	10	13
+//	2	5	8	11	14
+0 = 1 1 1 1 1
+1 = 0 0 0 0 0
+2 = 2 2 2 2 2
+
 [Reels]
 H1	1	H1	1	H1	1	H1	1	H1	1
 H2	1	H2	1	H2	1	H2	1	H2	1
