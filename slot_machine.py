@@ -1,42 +1,45 @@
 #slot machine
-import random
+from random import randrange
 
-def createRndStop(reels):
-    randStop = []
-    for r in range(0, len(reels)):
-        randStop.append(random.randrange(len(reels[r])))
+class SlotMachine:
+    def __init__(self):
+        self.reels = [ [ ('H1', 1), ('M1', 1), ('M2', 1), ('L1', 1), ('L2', 2) ],
+                       [ ('H1', 1), ('M1', 1), ('M2', 1), ('L1', 1), ('L2', 2) ],
+                       [ ('H1', 1), ('M1', 1), ('M2', 1), ('L1', 1), ('L2', 2) ],
+                       [ ('H1', 1), ('M1', 1), ('M2', 1), ('L1', 1), ('L2', 2) ],
+                       [ ('H1', 1), ('M1', 1), ('M2', 1), ('L1', 1), ('L2', 2) ] ]
+        self.reelSize = len(self.reels)
 
-    assert (len(randStop) == len(reels)), "reel size mismatch"
+    def createRndStop(self):
+        randStop = []
+        for r in range(0, self.reelSize):
+            randStop.append(randrange(len(self.reels[r])))
 
-    print('reelstop', randStop)
-    return randStop
+        assert (len(randStop) == len(self.reels)), "reel size mismatch"
 
-def createSymbolset(reels, stops):
-    symbolset = []
-    for r in range(0, len(stops)):
-        rowLen = len(reels[r])
-        reelRow = []
-        reelRow.append(reels[r][stops[r]][0])
-        reelRow.append(reels[r][(stops[r] + 1) % rowLen][0])
-        reelRow.append(reels[r][(stops[r] + 2) % rowLen][0])
-        symbolset.append(reelRow)
+        print('reelstop', randStop)
+        return randStop
 
-    print('symbolset', symbolset)
+    def createSymbolset(self, stops):
+        symbolset = []
+        for r in range(0, len(stops)):
+            rowLen = len(self.reels[r])
+            reelRow = []
+            reelRow.append(self.reels[r][stops[r]][0])
+            reelRow.append(self.reels[r][(stops[r] + 1) % rowLen][0])
+            reelRow.append(self.reels[r][(stops[r] + 2) % rowLen][0])
+            symbolset.append(reelRow)
 
-    return symbolset
-    
-def spin():
-    reels = [ [ ('H1', 1), ('M1', 1), ('M2', 1), ('L1', 1), ('L2', 2) ],
-              [ ('H1', 1), ('M1', 1), ('M2', 1), ('L1', 1), ('L2', 2) ],
-              [ ('H1', 1), ('M1', 1), ('M2', 1), ('L1', 1), ('L2', 2) ],
-              [ ('H1', 1), ('M1', 1), ('M2', 1), ('L1', 1), ('L2', 2) ],
-              [ ('H1', 1), ('M1', 1), ('M2', 1), ('L1', 1), ('L2', 2) ] ]
+        print('symbolset', symbolset)
 
-    reelLen = len(reels)
-    randStop = createRndStop(reels)
-    symbolset = createSymbolset(reels, randStop)
+        return symbolset
+        
+    def spin(self):
+        randStop = self.createRndStop()
+        symbolset = self.createSymbolset(randStop)
 
-    return symbolset
+        return symbolset
 
 if __name__ == '__main__':
-    spin()
+    machine = SlotMachine()
+    machine.spin()
