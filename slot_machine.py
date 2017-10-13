@@ -10,12 +10,13 @@ class SlotMachine:
                        [ ('H1', 1), ('M1', 1), ('M2', 1), ('L1', 1), ('L2', 2) ] ]
         self.reelSize = len(self.reels)
 
+    def __rowLen(self, reel):
+        return len(self.reels[reel])
+
     def createRndStop(self):
         randStop = []
         for r in range(0, self.reelSize):
-            randStop.append(randrange(len(self.reels[r])))
-
-        assert (len(randStop) == len(self.reels)), "reel size mismatch"
+            randStop.append(randrange(self.__rowLen(r)))
 
         print('reelstop', randStop)
         return randStop
@@ -23,11 +24,10 @@ class SlotMachine:
     def createSymbolset(self, stops):
         symbolset = []
         for r in range(0, len(stops)):
-            rowLen = len(self.reels[r])
             reelRow = []
             reelRow.append(self.reels[r][stops[r]][0])
-            reelRow.append(self.reels[r][(stops[r] + 1) % rowLen][0])
-            reelRow.append(self.reels[r][(stops[r] + 2) % rowLen][0])
+            reelRow.append(self.reels[r][(stops[r] + 1) % self.__rowLen(r)][0])
+            reelRow.append(self.reels[r][(stops[r] + 2) % self.__rowLen(r)][0])
             symbolset.append(reelRow)
 
         print('symbolset', symbolset)
