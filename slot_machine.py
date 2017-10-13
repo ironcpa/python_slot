@@ -3,13 +3,36 @@ from random import randrange
 
 class SlotMachine:
     def __init__(self):
-        self.reels = [ [ ('H1', 1), ('M1', 1), ('M2', 1), ('L1', 1), ('L2', 2) ],
-                       [ ('H1', 1), ('M1', 1), ('M2', 1), ('L1', 1), ('L2', 2) ],
-                       [ ('H1', 1), ('M1', 1), ('M2', 1), ('L1', 1), ('L2', 2) ],
-                       [ ('H1', 1), ('M1', 1), ('M2', 1), ('L1', 1), ('L2', 2) ],
-                       [ ('H1', 1), ('M1', 1), ('M2', 1), ('L1', 1), ('L2', 2) ] ]
+        self.__loadReels()
         self.reelSize = len(self.reels)
 
+    def __loadReels(self):
+        self.reels = []
+        infile = open('./machine_setting.txt', 'r')
+        isInReelsSection = False
+        for line in infile:
+            if line.startswith('//'):
+                continue
+            s = line.rstrip()
+            if isInReelsSection == False and s == '[Reels]':
+                isInReelsSection = True
+                continue
+            if isInReelsSection:
+                reel = 0
+                symbol = ''
+                multi = 0
+                row = s.split()
+                for n in range(0, len(row)):
+                    if n % 2 == 0:
+                        symbol = row[n]
+                    else:
+                        reel = n // 2
+                        multi = row[n]
+                        if reel >= len(self.reels):
+                            self.reels.append([])
+                        self.reels[reel].append((symbol, multi))
+        print('self.reels', self.reels)
+        
     def __rowLen(self, reel):
         return len(self.reels[reel])
 
