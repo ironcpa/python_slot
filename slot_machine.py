@@ -5,21 +5,38 @@ from enum import Enum
 class Section(Enum):
     none = 0
     symbol = 1
-    payline = 2
-    reels = 3
+    layout = 2
+    payline = 3
+    reels = 4
 
-class Payline():
+class Symbol:
+    def __init__(self, code, bitflag, desc):
+        self.code = code
+        self.bitflag = bigflag
+        self.desc = desc
+
+class Payline:
     def __init__(self, id, *reelRows):
         self.id = 0;
         self.reelRows = reelRows
+        
     def __str__(self):
         return "Payline"
+    
     def __repr__(self):
         return str(self.id) + str(self.reelRows)
 
+class AbsPosPayline:
+    def __init__(self, id, *positions):
+        self.id = 0
+        self.positions = positions
+
 class SlotSetting:
     def __init__(self):
+        self.symbols = []
+        self.layout = []
         self.paylines = []
+        self.absPosPaylines = []
         self.reels = []
         self.readSettingFile()
         
@@ -42,6 +59,8 @@ class SlotSetting:
     def resolveSection(self, line):
         if line == '[Symbols]':
             return Section.symbol
+        elif line == '[Layout]':
+            return Section.layout
         elif line == '[Paylines]':
             return Section.payline
         elif line == '[Reels]':
@@ -51,11 +70,26 @@ class SlotSetting:
 
     def readSection(self, line, section):
         if section == Section.symbol:
-            pass
+            self.readSymbol(line)
+        elif section == Section.layout:
+            self.readLayout(line)
         elif section == Section.payline:
             self.readPaylines(line)
         elif section == Section.reels:
             self.readReels(line)
+    
+    def readSymbol(self, line):
+        keyVal = line.split('=')
+        code = keyVal[0]
+        dataTokens = keyVal[1].split()
+        bitflag = dataTokens[0]
+        desc = dataTokens[1]
+        self.symbols.append(Symbol(code, bitflag, desc))
+
+    def readLayout(self, line):
+        print('readLayout', line, len(self.layout))
+        assert (len(self.layout) == 0), 'already set layout data'
+        self.layout = line.split()
         
     def readPaylines(self, line):
         keyVal = line.split('=')
@@ -77,6 +111,21 @@ class SlotSetting:
                 if reel >= len(self.reels):
                     self.reels.append([])
                 self.reels[reel].append((symbol, multi))
+
+    def convAbsPos(self, reel, row):
+        prevPos = 0
+        if reel > 0:
+            for rl in range(0, reel - 1):
+                prevPos += layout[rl]
+        return prevPos + row
+            
+        
+class PaylineWin:
+    def __init__(self):
+        self.line_id = 0
+        self.symbol = 0
+        self.match = 0
+        self.multi = 0
         
 class SlotMachine:
     def __init__(self):
@@ -111,8 +160,26 @@ class SlotMachine:
         randStop = self.createRndStop()
         symbolset = self.createSymbolset(randStop)
 
+        #payout
+        # line, symbol, match, multi
+        paylineWins = self.resolvePayout(symbolset)
+
         return symbolset
+
+    def resolvePayout(self, symbolset):
+        paylineWins = []
+        for pl in paylines:
+           #check match for reelRow's symbol 
+           #최대 영역 레이아웃 돌면서 layout바운더리 넘지 않게 하고
+           #절대페이라인 위치를 비트플래그로 검사
+           #비트플래그 검사 방법
+           #H1, H1, H1 인 경우 첫번째 심볼 기준, 
+        for reel, r in enumerate(symbolset):
+            for row, s in enumerate(r):
+                print('>>', reel, row, s)
+        return paylineWins
 
 if __name__ == '__main__':
     machine = SlotMachine()
     machine.spin()
+
