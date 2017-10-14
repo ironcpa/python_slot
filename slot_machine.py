@@ -168,7 +168,7 @@ class SlotMachine:
 
     def resolvePayout(self, symbolset):
         paylineWins = []
-        for pl in paylines:
+        for s in self.settings.symbols:
            #check match for reelRow's symbol 
            #최대 영역 레이아웃 돌면서 layout바운더리 넘지 않게 하고
            #절대페이라인 위치를 비트플래그로 검사
