@@ -7,24 +7,38 @@ class Section(Enum):
     symbol = 1
     layout = 2
     payline = 3
-    reels = 4
+    paytable = 4
+    reels = 5
 
 class Symbol:
     def __init__(self, code, bitflag, desc):
         self.code = code
-        self.bitflag = bigflag
+        self.bitflag = bitflag
         self.desc = desc
 
 class Payline:
-    def __init__(self, id, *reelRows):
+    def __init__(self, id, reelRows):
         self.id = 0;
         self.reelRows = reelRows
+        print('in payline constructor', self.reelRows)
         
     def __str__(self):
         return "Payline"
     
     def __repr__(self):
         return str(self.id) + str(self.reelRows)
+
+class Paytable:
+    def __init__(self, symbol, match, mul):
+        self.symbol = symbol
+        self.match = int(match)
+        self.mul = int(mul)
+    
+    def __str__(self):
+        return "Paytable"
+    
+    def __repr__(self):
+        return '{} {} {}'.format(self.symbol, self.match, self.mul)
 
 class AbsPosPayline:
     def __init__(self, id, *positions):
@@ -36,6 +50,7 @@ class SlotSetting:
         self.symbols = []
         self.layout = []
         self.paylines = []
+        self.paytables = []
         self.absPosPaylines = []
         self.reels = []
         self.readSettingFile()
@@ -63,6 +78,8 @@ class SlotSetting:
             return Section.layout
         elif line == '[Paylines]':
             return Section.payline
+        elif line == '[Paytables]':
+            return Section.paytable
         elif line == '[Reels]':
             return Section.reels
         else:
@@ -75,6 +92,8 @@ class SlotSetting:
             self.readLayout(line)
         elif section == Section.payline:
             self.readPaylines(line)
+        elif section == Section.paytable:
+            self.readPaytables(line)
         elif section == Section.reels:
             self.readReels(line)
     
@@ -89,14 +108,40 @@ class SlotSetting:
     def readLayout(self, line):
         print('readLayout', line, len(self.layout))
         assert (len(self.layout) == 0), 'already set layout data'
-        self.layout = line.split()
+        tokens = line.split()
+        for t in tokens:
+            self.layout.append(int(t))
+        print('layout result:', self.layout)
         
     def readPaylines(self, line):
         keyVal = line.split('=')
-        paylineId = keyVal[0]
-        reelRows = keyVal[1]
+        print(line)
+        paylineId = int(keyVal[0])
+        reelRows = []
+        valTokens = keyVal[1].split()
+        for t in valTokens:
+            reelRows.append(int(t))
         self.paylines.append(Payline(paylineId, reelRows))
-        
+
+    def readPaytables(self, line):
+        key, valList = self.readKeyValLine(line, '=', ' ')
+        symbol = key.rstrip()
+        for reel, mul in enumerate(valList):
+            match = reel + 1
+            print('mul', match, mul)
+            if int(mul) > 0:
+                self.paytables.append(Paytable(symbol, match, mul))
+        print('readPaytable', len(self.paytables), self.paytables)
+         
+    def readKeyValLine(self, line, keyDel, valDel):
+        keyVal = line.split(keyDel)
+        key = keyVal[0]
+        valList = []
+        valTokens = keyVal[1].split()
+        for t in valTokens:
+            valList.append(t)
+        return key, valList
+    
     def readReels(self, line):
         reel = 0
         symbol = ''
@@ -114,11 +159,18 @@ class SlotSetting:
 
     def convAbsPos(self, reel, row):
         prevPos = 0
-        if reel > 0:
-            for rl in range(0, reel - 1):
-                prevPos += layout[rl]
+        for rl in range(0, reel):
+            prevPos += self.layout[rl]
         return prevPos + row
-            
+
+    def getPaytable(self, symbol, match):
+        #found = next((x for x in self.paytables if x.symbol == symbol and x.match == match), None)
+        found = next((x for x in self.paytables if x.symbol == symbol), None)
+        print('getPaytable', symbol, match, found)
+        if found != None:
+            return found.mul
+        else:
+            return 0
         
 class PaylineWin:
     def __init__(self):
@@ -163,20 +215,38 @@ class SlotMachine:
         #payout
         # line, symbol, match, multi
         paylineWins = self.resolvePayout(symbolset)
+        print('paylineWins')
+        print(paylineWins)
 
         return symbolset
 
     def resolvePayout(self, symbolset):
+        #test symbolset
+        symbolset = [['H1','H2','M1'], ['H1','H2','M1'], ['H1','H2','M1'], ['H1','H2','M1'], ['H1','H2','M1']]
         paylineWins = []
-        for s in self.settings.symbols:
-           #check match for reelRow's symbol 
-           #최대 영역 레이아웃 돌면서 layout바운더리 넘지 않게 하고
-           #절대페이라인 위치를 비트플래그로 검사
-           #비트플래그 검사 방법
-           #H1, H1, H1 인 경우 첫번째 심볼 기준, 
-        for reel, r in enumerate(symbolset):
-            for row, s in enumerate(r):
-                print('>>', reel, row, s)
+        startSymbol = None
+        matchCnt = 0
+        wildBeforeStartSymbol = 0
+        for line in self.settings.paylines:
+            for reel, row in enumerate(line.reelRows):
+                s = symbolset[reel][row]
+                print('line symbols', reel, row, symbolset[reel][row])
+                if s != 'WI':
+                    startSymbol = s
+                if startSymbol == None and s == 'WI':
+                    wildBeforeStartSymbol += 1
+                if startSymbol != None and s == startSymbol:
+                    matchCnt += 1
+            if startSymbol == None:
+                startSymbol = 'WI'
+            matchCnt += wildBeforeStartSymbol
+
+            payout = self.settings.getPaytable(startSymbol, matchCnt)
+
+            print('line check:', startSymbol, matchCnt)
+            if payout > 0:
+                paylineWins.append((startSymbol, matchCnt, payout))
+
         return paylineWins
 
 if __name__ == '__main__':
