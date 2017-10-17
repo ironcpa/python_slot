@@ -229,12 +229,23 @@ class PaylineWin:
         self.match = match
         self.multi = multi
 
+    def __repr__(self):
+        return "line={} {}x{} x{}".format(self.line_id, self.symbol, self.match, self.multi)
+
+    def __str__(self):
+        return self.__repr__()
 
 class ScatterWin:
     def __init__(self, symbol, match, reward):
         self.symbol = symbol
         self.match = match
         self.reward = reward
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        return "{}: x{} rwd={}".format(self.symbol, self.match, self.reward)
 
 
 class SlotMachine:
@@ -273,10 +284,13 @@ class SlotMachine:
         # payout
         # line, symbol, match, multi
         payline_wins = self.resolve_payout(symbolset)
-        print('paylineWins')
+        print('paylineWins:')
         print(payline_wins)
+        scatter_wins = self.resolve_scatter_rewards(symbolset)
+        print("scatter reward:")
+        print(scatter_wins)
 
-        return symbolset
+        return symbolset, payline_wins, scatter_wins
 
     def resolve_payout(self, symbolset):
         payline_wins = []
@@ -327,7 +341,7 @@ class SlotMachine:
                 rewards = self.settings.find_all_scatter_reward(scatter, match_cnt)
                 if rewards is not None:
                     for reward in rewards:
-                        scatter_wins.append(ScatterWin(scatter, match_cnt, reward))
+                        scatter_wins.append(ScatterWin(scatter, match_cnt, reward.reward_type))
         return scatter_wins
 
     def str_symbolset(self, symbolset):
@@ -390,12 +404,13 @@ class UnitTest(unittest.TestCase):
                                                    'H2', 'SC', 'H1', 'H1', 'SC'])
         print(m.str_symbolset(test_symbolset))
         wins = m.resolve_scatter_rewards(test_symbolset)
+        print(wins)
         self.assertTrue(len(wins) == 1)
 
 
 if __name__ == '__main__':
-    # machine = SlotMachine()
-    # machine.spin()
+    machine = SlotMachine()
+    machine.spin()
 
-    suite = unittest.TestLoader().loadTestsFromTestCase(UnitTest)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    #suite = unittest.TestLoader().loadTestsFromTestCase(UnitTest)
+    #unittest.TextTestRunner(verbosity=2).run(suite)

@@ -2,9 +2,12 @@ todos
 
 20171017
 -introduce wild
+-introduce scatter check
+setting validation
 introduce bonus game
 introduce freespin
 -add unit tests
+add simulator
 save spin result log in db
 
 
