@@ -174,7 +174,7 @@ class SlotSetting:
         # found = next((x for x in self.paytables if x.symbol == symbol and x.match == match), None)
         found = next((x for x in self.paytables if x.symbol == symbol), None)
         print('getPaytable', symbol, match, found)
-        if found != None:
+        if found is not None:
             return found.mul
         else:
             return 0
@@ -242,11 +242,11 @@ class SlotMachine:
                 print('line symbols', reel, row, symbolset[reel][row])
                 if s != 'WI':
                     start_symbol = s
-                if start_symbol == None and s == 'WI':
+                if start_symbol is None and s == 'WI':
                     wild_before_start_symbol += 1
-                if start_symbol != None and s == start_symbol:
+                if start_symbol is not None and s == start_symbol:
                     match_cnt += 1
-            if start_symbol == None:
+            if start_symbol is None:
                 start_symbol = 'WI'
             match_cnt += wild_before_start_symbol
 
