@@ -1,7 +1,7 @@
 todos
 
 20171017
-introduce wild
+-introduce wild
 introduce bonus game
 introduce freespin
 add unit tests

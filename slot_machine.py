@@ -1,7 +1,7 @@
 # slot machine
 from random import randrange
 from enum import Enum
-
+import unittest
 
 class Section(Enum):
     none = 0
@@ -143,7 +143,6 @@ class SlotSetting:
         symbol = key.rstrip()
         for reel, mul in enumerate(val_list):
             match = reel + 1
-            print('mul', match, mul)
             if int(mul) > 0:
                 self.paytables.append(Paytable(symbol, match, mul))
         print('readPaytable', len(self.paytables), self.paytables)
@@ -192,11 +191,11 @@ class SlotSetting:
 
 
 class PaylineWin:
-    def __init__(self):
-        self.line_id = 0
-        self.symbol = 0
-        self.match = 0
-        self.multi = 0
+    def __init__(self, line_id, symbol, match, multi):
+        self.line_id = line_id
+        self.symbol = symbol
+        self.match = match
+        self.multi = multi
 
 
 class SlotMachine:
@@ -269,11 +268,11 @@ class SlotMachine:
 
             match_cnt += wild_before_start_symbol
 
-            payout = self.settings.get_paytable(start_symbol.code, match_cnt)
+            multi = self.settings.get_paytable(start_symbol.code, match_cnt)
 
             #print('line check:', start_symbol, match_cnt)
-            if payout > 0:
-                payline_wins.append((start_symbol, match_cnt, payout))
+            if multi > 0:
+                payline_wins.append(PaylineWin(line.id, start_symbol, match_cnt, multi))
 
         return payline_wins
 
@@ -289,6 +288,34 @@ class SlotMachine:
             str += "\n"
         return str
 
+class UnitTest(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    def fs(self, machine, code):
+        return machine.settings.find_symbol(code)
+
+    def test001_create_symbolset(self):
+        m = SlotMachine()
+        test_symbolset = [[self.fs(m, 'H1'), self.fs(m, 'H1'), self.fs(m, 'H1')],
+                          [self.fs(m, 'H1'), self.fs(m, 'H1'), self.fs(m, 'H1')],
+                          [self.fs(m, 'H1'), self.fs(m, 'H1'), self.fs(m, 'H1')],
+                          [self.fs(m, 'H1'), self.fs(m, 'H1'), self.fs(m, 'H1')],
+                          [self.fs(m, 'H1'), self.fs(m, 'H1'), self.fs(m, 'H1')],
+                          ]
+        wins = m.resolve_payout(test_symbolset)
+        total_payout = 0
+        for w in wins:
+            total_payout += w.multi
+        print(total_payout)
+        self.assertTrue(total_payout == 150)
+
 if __name__ == '__main__':
-    machine = SlotMachine()
-    machine.spin()
+    #machine = SlotMachine()
+    #machine.spin()
+
+    suite = unittest.TestLoader().loadTestsFromTestCase(UnitTest)
+    unittest.TextTestRunner(verbosity=2).run(suite)
