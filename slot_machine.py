@@ -9,7 +9,15 @@ class Section(Enum):
     layout = 2
     payline = 3
     paytable = 4
-    reels = 5
+    scatter = 5
+    reels = 6
+
+
+class RewardType(Enum):
+    none = 0
+    payout = 1
+    bonus_game = 2
+    freespin = 3
 
 
 class Symbol:
@@ -51,6 +59,12 @@ class Paytable:
     def __repr__(self):
         return '{} {} {}'.format(self.symbol_code, self.match, self.mul)
 
+class ScatterReward:
+    def __init__(self, symbol, match, reward_type, reward_val):
+        self.symbol = symbol
+        self.match = int(match)
+        self.reward_type = int(reward_type)
+        self.reward_val = int(reward_val)
 
 class AbsPosPayline:
     def __init__(self, id, *positions):
@@ -64,6 +78,8 @@ class SlotSetting:
         self.layout = []
         self.paylines = []
         self.paytables = []
+        self.scatters = []
+        self.scatter_rewards = []
         self.abs_pos_paylines = []
         self.reels = []
         self.read_setting_file()
@@ -94,6 +110,8 @@ class SlotSetting:
             return Section.payline
         elif line == '[Paytables]':
             return Section.paytable
+        elif line == '[Scatters]':
+            return Section.scatter;
         elif line == '[Reels]':
             return Section.reels
         else:
@@ -108,6 +126,8 @@ class SlotSetting:
             self.read_paylines(line)
         elif section == Section.paytable:
             self.read_paytables(line)
+        elif section == Section.scatter:
+            self.read_scatter(line)
         elif section == Section.reels:
             self.read_reels(line)
 
@@ -139,21 +159,27 @@ class SlotSetting:
         self.paylines.append(Payline(payline_id, reel_rows))
 
     def read_paytables(self, line):
-        key, val_list = self.read_key_val_line(line, '=', ' ')
-        symbol = key.rstrip()
+        symbol, val_list = self.read_key_val_line(line, '=', ' ')
         for reel, mul in enumerate(val_list):
             match = reel + 1
             if int(mul) > 0:
                 self.paytables.append(Paytable(symbol, match, mul))
         print('readPaytable', len(self.paytables), self.paytables)
 
+    def read_scatter(self, line):
+        key, val_list = self.read_key_val_line(line, '=', ' ')
+        scatter = self.find_symbol(key)
+        if scatter is not None and scatter not in self.scatters:
+            self.scatters.append(scatter)
+        self.scatter_rewards.append(ScatterReward(scatter, val_list[0], val_list[1], val_list[2]))
+
     def read_key_val_line(self, line, keyDel, valDel):
         key_val = line.split(keyDel)
-        key = key_val[0]
+        key = key_val[0].rstrip()
         val_list = []
         val_tokens = key_val[1].split()
         for t in val_tokens:
-            val_list.append(t)
+            val_list.append(t.rstrip())
         return key, val_list
 
     def read_reels(self, line):
@@ -189,6 +215,8 @@ class SlotSetting:
         else:
             return 0
 
+    def find_all_scatter_reward(self, symbol, match):
+        return [x for x in self.scatter_rewards if x.symbol == symbol and x.match == match]
 
 class PaylineWin:
     def __init__(self, line_id, symbol, match, multi):
@@ -196,6 +224,13 @@ class PaylineWin:
         self.symbol = symbol
         self.match = match
         self.multi = multi
+
+
+class ScatterWin:
+    def __init__(self, symbol, match, reward):
+        self.symbol = symbol
+        self.match = match
+        self.reward = reward
 
 
 class SlotMachine:
@@ -276,17 +311,33 @@ class SlotMachine:
 
         return payline_wins
 
+    def resolve_scatter_rewards(self, symbolset):
+        scatter_wins = []
+        match_cnt = 0
+        for scatter in self.settings.scatters:
+            for reel in symbolset:
+                for sym in reel:
+                    if sym == scatter:
+                        match_cnt += 1
+            if match_cnt > 0:
+                rewards = self.settings.find_all_scatter_reward(scatter, match_cnt)
+                if rewards is not None:
+                    for reward in rewards:
+                        scatter_wins.append(ScatterWin(scatter, match_cnt, reward))
+        return scatter_wins
+
     def str_symbolset(self, symbolset):
-        str = ''
+        s_str = ''
         reel_size = len(self.settings.layout)
         max_row = 3
         for row in range(0, max_row):
             for reel in range(0, reel_size):
                 s = symbolset[reel][row]
                 if s is not None:
-                    str += s.code + ","
-            str += "\n"
-        return str
+                    s_str += s.code + ","
+            s_str += "\n"
+        return s_str
+
 
 class UnitTest(unittest.TestCase):
     def setUp(self):
@@ -298,20 +349,44 @@ class UnitTest(unittest.TestCase):
     def fs(self, machine, code):
         return machine.settings.find_symbol(code)
 
-    def test001_create_symbolset(self):
+    @staticmethod
+    def create_symbolset(machine, symbol_codes):
+        reel_size = len(machine.settings.layout)
+        max_row = 3
+        symbolset = []
+        cur_pos = 0
+        for reel in range(0, reel_size):
+            symbolset.append([])
+            for row in range(0, max_row):
+                if row >= machine.settings.layout[reel]:
+                    continue
+                symbol = machine.settings.find_symbol(symbol_codes[cur_pos])
+                assert (symbol is not None), "Unknown symbol"
+                symbolset[reel].append(symbol)
+                cur_pos += 1
+        print('create_symbolset')
+        return symbolset
+
+    def test001_resolve_payout(self):
         m = SlotMachine()
-        test_symbolset = [[self.fs(m, 'H1'), self.fs(m, 'H1'), self.fs(m, 'H1')],
-                          [self.fs(m, 'H1'), self.fs(m, 'H1'), self.fs(m, 'H1')],
-                          [self.fs(m, 'H1'), self.fs(m, 'H1'), self.fs(m, 'H1')],
-                          [self.fs(m, 'H1'), self.fs(m, 'H1'), self.fs(m, 'H1')],
-                          [self.fs(m, 'H1'), self.fs(m, 'H1'), self.fs(m, 'H1')],
-                          ]
+        test_symbolset = self.create_symbolset(m, ['H1', 'H1', 'H1', 'H1', 'H1',
+                                                   'H1', 'H1', 'H1', 'H1', 'H1',
+                                                   'H1', 'H1', 'H1', 'H1', 'H1'])
         wins = m.resolve_payout(test_symbolset)
         total_payout = 0
         for w in wins:
             total_payout += w.multi
         print(total_payout)
         self.assertTrue(total_payout == 150)
+
+    def test002_resolve_scatter(self):
+        m = SlotMachine()
+        test_symbolset = self.create_symbolset(m, ['SC', 'H1', 'H1', 'H1', 'H1',
+                                                   'H1', 'SC', 'SC', 'H1', 'H1',
+                                                   'H2', 'SC', 'H1', 'H1', 'SC'])
+        print(m.str_symbolset(test_symbolset))
+        wins = m.resolve_scatter_rewards(test_symbolset)
+        self.assertTrue(len(wins) == 1)
 
 if __name__ == '__main__':
     #machine = SlotMachine()

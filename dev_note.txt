@@ -4,7 +4,7 @@ todos
 -introduce wild
 introduce bonus game
 introduce freespin
-add unit tests
+-add unit tests
 save spin result log in db
 
 

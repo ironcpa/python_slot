@@ -1,5 +1,6 @@
 [Symbols]
 W1 = 0 "Wild"           1
+SC = 64 "Scatter"       0
 H1 = 1 "High_Level_1"   0
 H2 = 2 "High_Level_2"   0
 M1 = 4 "Mid_Levle_1"    0
@@ -27,6 +28,11 @@ L2 = 32 "Low_Level_2"   0
 [Paytables]
 H1 = 0 0 10 20 50
 H2 = 0 0 10 20 30
+
+[Scatters]
+SC = 3 2 0
+SC = 4 2 0
+SC = 5 2 0
 
 [Reels]
 W1	1	H1	1	H1	1	H1	1	H1	1
