@@ -1,6 +1,7 @@
-#slot machine
+# slot machine
 from random import randrange
 from enum import Enum
+
 
 class Section(Enum):
     none = 0
@@ -10,40 +11,45 @@ class Section(Enum):
     paytable = 4
     reels = 5
 
+
 class Symbol:
     def __init__(self, code, bitflag, desc):
         self.code = code
         self.bitflag = bitflag
         self.desc = desc
 
+
 class Payline:
-    def __init__(self, id, reelRows):
+    def __init__(self, id, reel_rows):
         self.id = 0;
-        self.reelRows = reelRows
-        print('in payline constructor', self.reelRows)
-        
+        self.reel_rows = reel_rows
+        print('in payline constructor', self.reel_rows)
+
     def __str__(self):
         return "Payline"
-    
+
     def __repr__(self):
-        return str(self.id) + str(self.reelRows)
+        return str(self.id) + str(self.reel_rows)
+
 
 class Paytable:
     def __init__(self, symbol, match, mul):
         self.symbol = symbol
         self.match = int(match)
         self.mul = int(mul)
-    
+
     def __str__(self):
         return "Paytable"
-    
+
     def __repr__(self):
         return '{} {} {}'.format(self.symbol, self.match, self.mul)
+
 
 class AbsPosPayline:
     def __init__(self, id, *positions):
         self.id = 0
         self.positions = positions
+
 
 class SlotSetting:
     def __init__(self):
@@ -51,27 +57,28 @@ class SlotSetting:
         self.layout = []
         self.paylines = []
         self.paytables = []
-        self.absPosPaylines = []
+        self.abs_pos_paylines = []
         self.reels = []
-        self.readSettingFile()
-        
-    def readSettingFile(self):
+        self.read_setting_file()
+
+    def read_setting_file(self):
         infile = open('./machine_setting.txt', 'r')
-        currSection = Section.none
+        curr_section = Section.none
         for line in infile:
             s = line.rstrip()
             if len(s) == 0 or line.startswith('//'):
                 continue
-            section = self.resolveSection(s)
+            section = self.resolve_section(s)
             if section != Section.none:
-                currSection = section
+                curr_section = section
             else:
-                self.readSection(s, currSection)
+                self.read_section(s, curr_section)
 
         print('paylines', self.paylines)
         print('self.reels', self.reels)
 
-    def resolveSection(self, line):
+    @staticmethod
+    def resolve_section(line):
         if line == '[Symbols]':
             return Section.symbol
         elif line == '[Layout]':
@@ -85,64 +92,64 @@ class SlotSetting:
         else:
             return Section.none
 
-    def readSection(self, line, section):
+    def read_section(self, line, section):
         if section == Section.symbol:
-            self.readSymbol(line)
+            self.read_symbol(line)
         elif section == Section.layout:
-            self.readLayout(line)
+            self.read_layout(line)
         elif section == Section.payline:
-            self.readPaylines(line)
+            self.read_paylines(line)
         elif section == Section.paytable:
-            self.readPaytables(line)
+            self.read_paytables(line)
         elif section == Section.reels:
-            self.readReels(line)
-    
-    def readSymbol(self, line):
-        keyVal = line.split('=')
-        code = keyVal[0]
-        dataTokens = keyVal[1].split()
-        bitflag = dataTokens[0]
-        desc = dataTokens[1]
+            self.read_reels(line)
+
+    def read_symbol(self, line):
+        key_val = line.split('=')
+        code = key_val[0]
+        data_tokens = key_val[1].split()
+        bitflag = data_tokens[0]
+        desc = data_tokens[1]
         self.symbols.append(Symbol(code, bitflag, desc))
 
-    def readLayout(self, line):
+    def read_layout(self, line):
         print('readLayout', line, len(self.layout))
         assert (len(self.layout) == 0), 'already set layout data'
         tokens = line.split()
         for t in tokens:
             self.layout.append(int(t))
         print('layout result:', self.layout)
-        
-    def readPaylines(self, line):
-        keyVal = line.split('=')
-        print(line)
-        paylineId = int(keyVal[0])
-        reelRows = []
-        valTokens = keyVal[1].split()
-        for t in valTokens:
-            reelRows.append(int(t))
-        self.paylines.append(Payline(paylineId, reelRows))
 
-    def readPaytables(self, line):
-        key, valList = self.readKeyValLine(line, '=', ' ')
+    def read_paylines(self, line):
+        key_val = line.split('=')
+        print(line)
+        payline_id = int(key_val[0])
+        reel_rows = []
+        val_tokens = key_val[1].split()
+        for t in val_tokens:
+            reel_rows.append(int(t))
+        self.paylines.append(Payline(payline_id, reel_rows))
+
+    def read_paytables(self, line):
+        key, val_list = self.read_key_val_line(line, '=', ' ')
         symbol = key.rstrip()
-        for reel, mul in enumerate(valList):
+        for reel, mul in enumerate(val_list):
             match = reel + 1
             print('mul', match, mul)
             if int(mul) > 0:
                 self.paytables.append(Paytable(symbol, match, mul))
         print('readPaytable', len(self.paytables), self.paytables)
-         
-    def readKeyValLine(self, line, keyDel, valDel):
-        keyVal = line.split(keyDel)
-        key = keyVal[0]
-        valList = []
-        valTokens = keyVal[1].split()
-        for t in valTokens:
-            valList.append(t)
-        return key, valList
-    
-    def readReels(self, line):
+
+    def read_key_val_line(self, line, keyDel, valDel):
+        key_val = line.split(keyDel)
+        key = key_val[0]
+        val_list = []
+        val_tokens = key_val[1].split()
+        for t in val_tokens:
+            val_list.append(t)
+        return key, val_list
+
+    def read_reels(self, line):
         reel = 0
         symbol = ''
         multi = 0
@@ -157,99 +164,101 @@ class SlotSetting:
                     self.reels.append([])
                 self.reels[reel].append((symbol, multi))
 
-    def convAbsPos(self, reel, row):
-        prevPos = 0
+    def conv_abs_pos(self, reel, row):
+        prev_pos = 0
         for rl in range(0, reel):
-            prevPos += self.layout[rl]
-        return prevPos + row
+            prev_pos += self.layout[rl]
+        return prev_pos + row
 
-    def getPaytable(self, symbol, match):
-        #found = next((x for x in self.paytables if x.symbol == symbol and x.match == match), None)
+    def get_paytable(self, symbol, match):
+        # found = next((x for x in self.paytables if x.symbol == symbol and x.match == match), None)
         found = next((x for x in self.paytables if x.symbol == symbol), None)
         print('getPaytable', symbol, match, found)
         if found != None:
             return found.mul
         else:
             return 0
-        
+
+
 class PaylineWin:
     def __init__(self):
         self.line_id = 0
         self.symbol = 0
         self.match = 0
         self.multi = 0
-        
+
+
 class SlotMachine:
     def __init__(self):
         self.settings = SlotSetting()
-        self.reelSize = len(self.settings.reels)
-        
-    def __rowLen(self, reel):
+        self.reel_size = len(self.settings.reels)
+
+    def __row_len(self, reel):
         return len(self.settings.reels[reel])
 
-    def createRndStop(self):
-        randStop = []
-        for r in range(0, self.reelSize):
-            randStop.append(randrange(self.__rowLen(r)))
+    def create_rnd_stop(self):
+        rand_stop = []
+        for r in range(0, self.reel_size):
+            rand_stop.append(randrange(self.__row_len(r)))
 
-        print('reelstop', randStop)
-        return randStop
+        print('reelstop', rand_stop)
+        return rand_stop
 
-    def createSymbolset(self, stops):
+    def create_symbolset(self, stops):
         symbolset = []
         for r in range(0, len(stops)):
-            reelRow = []
-            reelRow.append(self.settings.reels[r][stops[r]][0])
-            reelRow.append(self.settings.reels[r][(stops[r] + 1) % self.__rowLen(r)][0])
-            reelRow.append(self.settings.reels[r][(stops[r] + 2) % self.__rowLen(r)][0])
-            symbolset.append(reelRow)
+            reel_row = []
+            reel_row.append(self.settings.reels[r][stops[r]][0])
+            reel_row.append(self.settings.reels[r][(stops[r] + 1) % self.__row_len(r)][0])
+            reel_row.append(self.settings.reels[r][(stops[r] + 2) % self.__row_len(r)][0])
+            symbolset.append(reel_row)
 
         print('symbolset', symbolset)
 
         return symbolset
-        
-    def spin(self):
-        randStop = self.createRndStop()
-        symbolset = self.createSymbolset(randStop)
 
-        #payout
+    def spin(self):
+        rand_stop = self.create_rnd_stop()
+        symbolset = self.create_symbolset(rand_stop)
+
+        # payout
         # line, symbol, match, multi
-        paylineWins = self.resolvePayout(symbolset)
+        payline_wins = self.resolve_payout(symbolset)
         print('paylineWins')
-        print(paylineWins)
+        print(payline_wins)
 
         return symbolset
 
-    def resolvePayout(self, symbolset):
-        #test symbolset
-        symbolset = [['H1','H2','M1'], ['H1','H2','M1'], ['H1','H2','M1'], ['H1','H2','M1'], ['H1','H2','M1']]
-        paylineWins = []
-        startSymbol = None
-        matchCnt = 0
-        wildBeforeStartSymbol = 0
+    def resolve_payout(self, symbolset):
+        # test symbolset
+        symbolset = [['H1', 'H2', 'M1'], ['H1', 'H2', 'M1'], ['H1', 'H2', 'M1'], ['H1', 'H2', 'M1'], ['H1', 'H2', 'M1']]
+        payline_wins = []
+        start_symbol = None
+        match_cnt = 0
+        wild_before_start_symbol = 0
         for line in self.settings.paylines:
-            for reel, row in enumerate(line.reelRows):
+            for reel, row in enumerate(line.reel_rows):
                 s = symbolset[reel][row]
                 print('line symbols', reel, row, symbolset[reel][row])
                 if s != 'WI':
-                    startSymbol = s
-                if startSymbol == None and s == 'WI':
-                    wildBeforeStartSymbol += 1
-                if startSymbol != None and s == startSymbol:
-                    matchCnt += 1
-            if startSymbol == None:
-                startSymbol = 'WI'
-            matchCnt += wildBeforeStartSymbol
+                    start_symbol = s
+                if start_symbol == None and s == 'WI':
+                    wild_before_start_symbol += 1
+                if start_symbol != None and s == start_symbol:
+                    match_cnt += 1
+            if start_symbol == None:
+                start_symbol = 'WI'
+            match_cnt += wild_before_start_symbol
 
-            payout = self.settings.getPaytable(startSymbol, matchCnt)
+            payout = self.settings.get_paytable(start_symbol, match_cnt)
 
-            print('line check:', startSymbol, matchCnt)
+            print('line check:', start_symbol, match_cnt)
             if payout > 0:
-                paylineWins.append((startSymbol, matchCnt, payout))
+                payline_wins.append((start_symbol, match_cnt, payout))
 
-        return paylineWins
+        return payline_wins
+
 
 if __name__ == '__main__':
     machine = SlotMachine()
     machine.spin()
-
