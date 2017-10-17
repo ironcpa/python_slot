@@ -13,10 +13,17 @@ class Section(Enum):
 
 
 class Symbol:
-    def __init__(self, code, bitflag, desc):
+    def __init__(self, code, bitflag, desc, is_wild):
         self.code = code
-        self.bitflag = bitflag
+        self.bitflag = int(bitflag)
         self.desc = desc
+        self.is_wild = True if is_wild == 1 else False
+
+    def __str__(self):
+        return self.code
+
+    def __repr__(self):
+        return self.code
 
 
 class Payline:
@@ -33,8 +40,8 @@ class Payline:
 
 
 class Paytable:
-    def __init__(self, symbol, match, mul):
-        self.symbol = symbol
+    def __init__(self, symbol_code, match, mul):
+        self.symbol_code = symbol_code
         self.match = int(match)
         self.mul = int(mul)
 
@@ -42,7 +49,7 @@ class Paytable:
         return "Paytable"
 
     def __repr__(self):
-        return '{} {} {}'.format(self.symbol, self.match, self.mul)
+        return '{} {} {}'.format(self.symbol_code, self.match, self.mul)
 
 
 class AbsPosPayline:
@@ -106,11 +113,12 @@ class SlotSetting:
 
     def read_symbol(self, line):
         key_val = line.split('=')
-        code = key_val[0]
+        code = key_val[0].rstrip()
         data_tokens = key_val[1].split()
         bitflag = data_tokens[0]
         desc = data_tokens[1]
-        self.symbols.append(Symbol(code, bitflag, desc))
+        is_wild = int(data_tokens[2])
+        self.symbols.append(Symbol(code, bitflag, desc, is_wild))
 
     def read_layout(self, line):
         print('readLayout', line, len(self.layout))
@@ -151,18 +159,18 @@ class SlotSetting:
 
     def read_reels(self, line):
         reel = 0
-        symbol = ''
+        sym_code = ''
         multi = 0
         row = line.split()
         for n in range(0, len(row)):
             if n % 2 == 0:
-                symbol = row[n]
+                sym_code = row[n]
             else:
                 reel = n // 2
                 multi = row[n]
                 if reel >= len(self.reels):
                     self.reels.append([])
-                self.reels[reel].append((symbol, multi))
+                self.reels[reel].append((self.find_symbol(sym_code), multi))
 
     def conv_abs_pos(self, reel, row):
         prev_pos = 0
@@ -170,10 +178,13 @@ class SlotSetting:
             prev_pos += self.layout[rl]
         return prev_pos + row
 
-    def get_paytable(self, symbol, match):
-        # found = next((x for x in self.paytables if x.symbol == symbol and x.match == match), None)
-        found = next((x for x in self.paytables if x.symbol == symbol), None)
-        print('getPaytable', symbol, match, found)
+    def find_symbol(self, symbol_code):
+        #print('find_symbol', symbol_code, len(symbol_code))
+        return next((x for x in self.symbols if x.code == symbol_code), None)
+
+    def get_paytable(self, symbol_code, match):
+        found = next((x for x in self.paytables if x.symbol_code == symbol_code and x.match == match), None)
+        #print('getPaytable', symbol_code, match, found)
         if found is not None:
             return found.mul
         else:
@@ -207,13 +218,13 @@ class SlotMachine:
     def create_symbolset(self, stops):
         symbolset = []
         for r in range(0, len(stops)):
-            reel_row = []
-            reel_row.append(self.settings.reels[r][stops[r]][0])
-            reel_row.append(self.settings.reels[r][(stops[r] + 1) % self.__row_len(r)][0])
-            reel_row.append(self.settings.reels[r][(stops[r] + 2) % self.__row_len(r)][0])
+            reel_row = [self.settings.reels[r][stops[r]][0],
+                        self.settings.reels[r][(stops[r] + 1) % self.__row_len(r)][0],
+                        self.settings.reels[r][(stops[r] + 2) % self.__row_len(r)][0]]
             symbolset.append(reel_row)
 
         print('symbolset', symbolset)
+        print(self.str_symbolset(symbolset))
 
         return symbolset
 
@@ -230,34 +241,53 @@ class SlotMachine:
         return symbolset
 
     def resolve_payout(self, symbolset):
-        # test symbolset
-        symbolset = [['H1', 'H2', 'M1'], ['H1', 'H2', 'M1'], ['H1', 'H2', 'M1'], ['H1', 'H2', 'M1'], ['H1', 'H2', 'M1']]
         payline_wins = []
-        start_symbol = None
-        match_cnt = 0
-        wild_before_start_symbol = 0
         for line in self.settings.paylines:
+            start_symbol = None
+            match_cnt = 0
+            wild_before_start_symbol = 0
             for reel, row in enumerate(line.reel_rows):
                 s = symbolset[reel][row]
-                print('line symbols', reel, row, symbolset[reel][row])
-                if s != 'WI':
-                    start_symbol = s
-                if start_symbol is None and s == 'WI':
-                    wild_before_start_symbol += 1
-                if start_symbol is not None and s == start_symbol:
-                    match_cnt += 1
-            if start_symbol is None:
-                start_symbol = 'WI'
+                #print('line symbols', reel, row, symbolset[reel][row])
+                if s is None:
+                    continue
+
+                if s.is_wild:
+                    if start_symbol is None:
+                        wild_before_start_symbol += 1
+                    else:
+                        match_cnt += 1
+                else:
+                    if start_symbol is None:
+                        start_symbol = s
+                        match_cnt += 1
+                    else:
+                        if s == start_symbol:
+                            match_cnt += 1
+                        else:
+                            break
+
             match_cnt += wild_before_start_symbol
 
-            payout = self.settings.get_paytable(start_symbol, match_cnt)
+            payout = self.settings.get_paytable(start_symbol.code, match_cnt)
 
-            print('line check:', start_symbol, match_cnt)
+            #print('line check:', start_symbol, match_cnt)
             if payout > 0:
                 payline_wins.append((start_symbol, match_cnt, payout))
 
         return payline_wins
 
+    def str_symbolset(self, symbolset):
+        str = ''
+        reel_size = len(self.settings.layout)
+        max_row = 3
+        for row in range(0, max_row):
+            for reel in range(0, reel_size):
+                s = symbolset[reel][row]
+                if s is not None:
+                    str += s.code + ","
+            str += "\n"
+        return str
 
 if __name__ == '__main__':
     machine = SlotMachine()

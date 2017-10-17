@@ -1,10 +1,11 @@
 [Symbols]
-H1 = 1 "High_Level_1"
-H2 = 2 "High_Level_2"
-M1 = 4 "Mid_Levle_1"
-M2 = 8 "Mid_Level_2"
-L1 = 16 "Low_Lev3l_1"
-L2 = 32 "Low_Level_2"
+W1 = 0 "Wild"           1
+H1 = 1 "High_Level_1"   0
+H2 = 2 "High_Level_2"   0
+M1 = 4 "Mid_Levle_1"    0
+M2 = 8 "Mid_Level_2"    0
+L1 = 16 "Low_Lev3l_1"   0
+L2 = 32 "Low_Level_2"   0
 
 [Layout]
 3 3 3 3 3
@@ -19,17 +20,25 @@ L2 = 32 "Low_Level_2"
 //	0	3	6	9	12
 //	1	4	7	10	13
 //	2	5	8	11	14
-//0 = 1 1 1 1 1
+0 = 1 1 1 1 1
 1 = 0 0 0 0 0
-//2 = 2 2 2 2 2
+2 = 2 2 2 2 2
 
 [Paytables]
 H1 = 0 0 10 20 50
 H2 = 0 0 10 20 30
 
 [Reels]
+W1	1	H1	1	H1	1	H1	1	H1	1
+M2	1	M2	1	W1	1	M2	1	W1	1
 H1	1	H1	1	H1	1	H1	1	H1	1
-H2	1	H2	1	H2	1	H2	1	H2	1
+H1	1	H1	1	H1	1	H1	1	H1	1
+H1	1	H1	1	W1	1	H1	1	H1	1
+H1	1	H1	1	H1	1	H1	1	H1	1
+H1	1	W1	1	H1	1	H1	1	H1	1
+H1	1	H1	1	H1	1	W1	1	H1	1
+H1	1	H1	1	H1	1	H1	1	H1	1
+H2	1	H2	1	W2	1	H2	1	H2	1
 M1	1	M1	1	M1	1	M1	1	M1	1
 M2	1	M2	1	M2	1	M2	1	M2	1
 L1	1	L1	1	L1	1	L1	1	L1	1

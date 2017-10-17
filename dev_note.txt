@@ -1,0 +1,12 @@
+todos
+
+20171017
+introduce wild
+introduce bonus game
+introduce freespin
+add unit tests
+save spin result log in db
+
+
+python problem
+type 체킹이 없어 데이터 맴버 초기화 값 확인이 어렵다.
