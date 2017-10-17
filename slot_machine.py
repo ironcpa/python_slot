@@ -3,6 +3,7 @@ from random import randrange
 from enum import Enum
 import unittest
 
+
 class Section(Enum):
     none = 0
     symbol = 1
@@ -59,12 +60,14 @@ class Paytable:
     def __repr__(self):
         return '{} {} {}'.format(self.symbol_code, self.match, self.mul)
 
+
 class ScatterReward:
     def __init__(self, symbol, match, reward_type, reward_val):
         self.symbol = symbol
         self.match = int(match)
         self.reward_type = int(reward_type)
         self.reward_val = int(reward_val)
+
 
 class AbsPosPayline:
     def __init__(self, id, *positions):
@@ -204,12 +207,12 @@ class SlotSetting:
         return prev_pos + row
 
     def find_symbol(self, symbol_code):
-        #print('find_symbol', symbol_code, len(symbol_code))
+        # print('find_symbol', symbol_code, len(symbol_code))
         return next((x for x in self.symbols if x.code == symbol_code), None)
 
     def get_paytable(self, symbol_code, match):
         found = next((x for x in self.paytables if x.symbol_code == symbol_code and x.match == match), None)
-        #print('getPaytable', symbol_code, match, found)
+        # print('getPaytable', symbol_code, match, found)
         if found is not None:
             return found.mul
         else:
@@ -217,6 +220,7 @@ class SlotSetting:
 
     def find_all_scatter_reward(self, symbol, match):
         return [x for x in self.scatter_rewards if x.symbol == symbol and x.match == match]
+
 
 class PaylineWin:
     def __init__(self, line_id, symbol, match, multi):
@@ -282,7 +286,7 @@ class SlotMachine:
             wild_before_start_symbol = 0
             for reel, row in enumerate(line.reel_rows):
                 s = symbolset[reel][row]
-                #print('line symbols', reel, row, symbolset[reel][row])
+                # print('line symbols', reel, row, symbolset[reel][row])
                 if s is None:
                     continue
 
@@ -305,7 +309,7 @@ class SlotMachine:
 
             multi = self.settings.get_paytable(start_symbol.code, match_cnt)
 
-            #print('line check:', start_symbol, match_cnt)
+            # print('line check:', start_symbol, match_cnt)
             if multi > 0:
                 payline_wins.append(PaylineWin(line.id, start_symbol, match_cnt, multi))
 
@@ -388,9 +392,10 @@ class UnitTest(unittest.TestCase):
         wins = m.resolve_scatter_rewards(test_symbolset)
         self.assertTrue(len(wins) == 1)
 
+
 if __name__ == '__main__':
-    #machine = SlotMachine()
-    #machine.spin()
+    # machine = SlotMachine()
+    # machine.spin()
 
     suite = unittest.TestLoader().loadTestsFromTestCase(UnitTest)
     unittest.TextTestRunner(verbosity=2).run(suite)
