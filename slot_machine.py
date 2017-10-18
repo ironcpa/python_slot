@@ -236,9 +236,10 @@ class PaylineWin:
         return self.__repr__()
 
 class ScatterWin:
-    def __init__(self, symbol, match, reward):
+    def __init__(self, symbol, match, reward_type, reward):
         self.symbol = symbol
         self.match = match
+        self.reward_type = RewardType(reward_type)
         self.reward = reward
 
     def __str__(self):
@@ -260,6 +261,7 @@ class SlotMachine:
         self.settings = SlotSetting()
         self.reel_size = len(self.settings.reels)
         self.stat = Stat()
+        self.reserved_symbolset = None
 
     def __row_len(self, reel):
         return len(self.settings.reels[reel])
@@ -285,9 +287,11 @@ class SlotMachine:
 
         return symbolset
 
-    def spin(self):
+    def spin(self, line_bet = 1):
         rand_stop = self.create_rnd_stop()
         symbolset = self.create_symbolset(rand_stop)
+        if self.reserved_symbolset is not None:
+            symbolset = self.pop_reserved_symbolset()
 
         # payout
         # line, symbol, match, multi
@@ -298,7 +302,36 @@ class SlotMachine:
         print("scatter reward:")
         print(scatter_wins)
 
+        self.post_spin(line_bet, symbolset, payline_wins, scatter_wins)
+
         return symbolset, payline_wins, scatter_wins
+
+    def post_spin(self, line_bet, symbolset, payline_wins, scatter_wins):
+        #money
+        total_payout = 0
+        for w in payline_wins:
+            total_payout += line_bet * w.multi
+
+        #scatter_win has
+        # reward
+        freespin = 0
+        for w in scatter_wins:
+            if w.reward_type == RewardType.payout:
+                total_payout += line_bet * w.reward_val
+            elif w.reward_type == RewardType.freespin:
+                freespin += w.reward
+            elif w.reward_type == RewardType.bonus_game:
+                pass
+
+        #run freespin right away
+        for f in range(freespin):
+            self.spin(line_bet)
+            self.stat.total_freespins += 1
+
+        self.stat.total_spins += 1
+        self.stat.total_reward += total_payout
+
+        pass
 
     def resolve_payout(self, symbolset):
         payline_wins = []
@@ -349,7 +382,7 @@ class SlotMachine:
                 rewards = self.settings.find_all_scatter_reward(scatter, match_cnt)
                 if rewards is not None:
                     for reward in rewards:
-                        scatter_wins.append(ScatterWin(scatter, match_cnt, reward.reward_type))
+                        scatter_wins.append(ScatterWin(scatter, match_cnt, reward.reward_type, reward.reward_val))
         return scatter_wins
 
     def str_symbolset(self, symbolset):
@@ -364,6 +397,13 @@ class SlotMachine:
             s_str += "\n"
         return s_str
 
+    def reserve_symbolset(self, symbolset):
+        self.reserved_symbolset = symbolset
+
+    def pop_reserved_symbolset(self):
+        tmp = self.reserved_symbolset
+        self.reserved_symbolset = None
+        return tmp
 
 class BonusGame:
     def __init__(self):
@@ -429,10 +469,12 @@ class UnitTest(unittest.TestCase):
                                                    'H2', 'SC', 'H1', 'H1', 'SC'])
         m.reserve_symbolset(test_symbolset)
         m.spin()
+        print('total freespin :', m.stat.total_freespins)
+        self.assertTrue(m.stat.total_freespins == 10)
 
 if __name__ == '__main__':
-    machine = SlotMachine()
-    machine.spin()
+    #machine = SlotMachine()
+    #machine.spin()
 
-    #suite = unittest.TestLoader().loadTestsFromTestCase(UnitTest)
-    #unittest.TextTestRunner(verbosity=2).run(suite)
+    suite = unittest.TestLoader().loadTestsFromTestCase(UnitTest)
+    unittest.TextTestRunner(verbosity=2).run(suite)

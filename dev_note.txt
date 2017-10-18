@@ -7,6 +7,7 @@ state over multiple spins
     필요시 player 외부객체 도입
     일단 machine 내부 누적 데이터 관리
         어쩔수 없이 spin() 마지막에서 stat 적립 처리
+introduce bet money : line bet, total bet
 setting validation
 introduce bonus game
 introduce freespin
@@ -17,3 +18,8 @@ save spin result log in db
 
 python problem
 type 체킹이 없어 데이터 맴버 초기화 값 확인이 어렵다.
+
+
+pycharm keys
+start new line : sft + enter
+start new line before curr line : ctl + alt + enter
