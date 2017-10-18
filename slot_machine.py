@@ -250,20 +250,28 @@ class ScatterWin:
         return "{}: x{} rwd={}".format(self.symbol, self.match, self.reward)
 
 
-class SpinType(Enum):
+class ResultType(Enum):
     base = 0
-    free = 1
+    bonus_game = 1
+    free = 3
 
 
 class SpinResult:
-    def __init__(self, spin_type, line_bet):
-        self.spin_type = spin_type
+    def __init__(self, rtype, line_bet):
+        self.rtype = rtype
         self.line_bet = line_bet
         self.symbolset = None
         self.sub_spin_results = []
 
     def add_sub_result(self, spin_result):
         self.sub_spin_results.append(spin_result)
+
+
+class BonusResult:
+    def __init__(self, rtype, line_bet):
+        self.rtype = rtype
+        self.line_bet = line_bet
+        self.payout = 0
 
 
 class Stat:
@@ -277,6 +285,7 @@ class SlotMachine:
     def __init__(self):
         self.settings = SlotSetting()
         self.reel_size = len(self.settings.reels)
+        self.bonus_game = None
         self.stat = Stat()
         self.reserved_symbolset = None
 
@@ -304,13 +313,13 @@ class SlotMachine:
 
         return symbolset
 
-    def spin(self, spin_type=SpinType.base, line_bet=1):
+    def spin(self, result_type = ResultType.base, line_bet=1):
         rand_stop = self.create_rnd_stop()
         symbolset = self.create_symbolset(rand_stop)
         if self.reserved_symbolset is not None:
             symbolset = self.pop_reserved_symbolset()
 
-        result = SpinResult(spin_type, line_bet)
+        result = SpinResult(result_type, line_bet)
         # payout
         # line, symbol, match, multi
         result.symbolset = symbolset
@@ -330,17 +339,21 @@ class SlotMachine:
         # scatter_win has
         # reward
         freespin = 0
+        is_bonus_game = False
         for w in spin_result.scatter_wins:
             if w.reward_type == RewardType.payout:
                 total_payout += spin_result.line_bet * w.reward_val
             elif w.reward_type == RewardType.freespin:
                 freespin += w.reward
             elif w.reward_type == RewardType.bonus_game:
-                pass
+                is_bonus_game = True
+
+        if is_bonus_game:
+            spin_result.add_sub_result(self.get_bonus_game().run(spin_result))
 
         # run freespin right away
         for f in range(freespin):
-            spin_result.add_sub_result(self.spin(SpinType.free, spin_result.line_bet))
+            spin_result.add_sub_result(self.spin(ResultType.free, spin_result.line_bet))
             self.stat.total_freespins += 1
 
         self.stat.total_spins += 1
@@ -400,6 +413,11 @@ class SlotMachine:
                         scatter_wins.append(ScatterWin(scatter, match_cnt, reward.reward_type, reward.reward_val))
         return scatter_wins
 
+    def get_bonus_game(self):
+        if self.bonus_game is None:
+            self.bonus_game = BonusGame()
+        return self.bonus_game
+
     def str_symbolset(self, symbolset):
         s_str = ''
         reel_size = len(self.settings.layout)
@@ -424,6 +442,11 @@ class SlotMachine:
 class BonusGame:
     def __init__(self):
         pass
+
+    def run(self, base_spin_result):
+        result = BonusResult(ResultType.bonus_game, base_spin_result.line_bet)
+        result.payout = 999         #test
+        return result
 
 
 class Freespin:
@@ -487,6 +510,21 @@ class UnitTest(unittest.TestCase):
         m.spin()
         print('total freespin :', m.stat.total_freespins)
         self.assertTrue(m.stat.total_freespins == 10)
+
+    def test_bonus_game(self):
+        m = SlotMachine()
+        test_symbolset = self.create_symbolset(m, ['SC', 'H1', 'H1', 'H1', 'H1',
+                                                   'H1', 'SC', 'SC', 'H1', 'H1',
+                                                   'H2', 'H1', 'H1', 'H1', 'SC'])
+        m.reserve_symbolset(test_symbolset)
+        result = m.spin()
+        bonus_result_cnt = 0
+        for r in result.sub_spin_results:
+            if r.rtype is ResultType.bonus_game:
+                bonus_result_cnt += 1
+
+        print('total bonus hit', bonus_result_cnt)
+        self.assertTrue(bonus_result_cnt == 1)
 
 
 if __name__ == '__main__':
