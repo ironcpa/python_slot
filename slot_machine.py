@@ -235,6 +235,7 @@ class PaylineWin:
     def __str__(self):
         return self.__repr__()
 
+
 class ScatterWin:
     def __init__(self, symbol, match, reward_type, reward):
         self.symbol = symbol
@@ -247,6 +248,22 @@ class ScatterWin:
 
     def __repr__(self):
         return "{}: x{} rwd={}".format(self.symbol, self.match, self.reward)
+
+
+class SpinType(Enum):
+    base = 0
+    free = 1
+
+
+class SpinResult:
+    def __init__(self, spin_type, line_bet):
+        self.spin_type = spin_type
+        self.line_bet = line_bet
+        self.symbolset = None
+        self.sub_spin_results = []
+
+    def add_sub_result(self, spin_result):
+        self.sub_spin_results.append(spin_result)
 
 
 class Stat:
@@ -287,45 +304,43 @@ class SlotMachine:
 
         return symbolset
 
-    def spin(self, line_bet = 1):
+    def spin(self, spin_type=SpinType.base, line_bet=1):
         rand_stop = self.create_rnd_stop()
         symbolset = self.create_symbolset(rand_stop)
         if self.reserved_symbolset is not None:
             symbolset = self.pop_reserved_symbolset()
 
+        result = SpinResult(spin_type, line_bet)
         # payout
         # line, symbol, match, multi
-        payline_wins = self.resolve_payout(symbolset)
-        print('paylineWins:')
-        print(payline_wins)
-        scatter_wins = self.resolve_scatter_rewards(symbolset)
-        print("scatter reward:")
-        print(scatter_wins)
+        result.symbolset = symbolset
+        result.payline_wins = self.resolve_payout(symbolset)
+        result.scatter_wins = self.resolve_scatter_rewards(symbolset)
 
-        self.post_spin(line_bet, symbolset, payline_wins, scatter_wins)
+        self.post_spin(result)
 
-        return symbolset, payline_wins, scatter_wins
+        return result
 
-    def post_spin(self, line_bet, symbolset, payline_wins, scatter_wins):
-        #money
+    def post_spin(self, spin_result):
+        # money
         total_payout = 0
-        for w in payline_wins:
-            total_payout += line_bet * w.multi
+        for w in spin_result.payline_wins:
+            total_payout += spin_result.line_bet * w.multi
 
-        #scatter_win has
+        # scatter_win has
         # reward
         freespin = 0
-        for w in scatter_wins:
+        for w in spin_result.scatter_wins:
             if w.reward_type == RewardType.payout:
-                total_payout += line_bet * w.reward_val
+                total_payout += spin_result.line_bet * w.reward_val
             elif w.reward_type == RewardType.freespin:
                 freespin += w.reward
             elif w.reward_type == RewardType.bonus_game:
                 pass
 
-        #run freespin right away
+        # run freespin right away
         for f in range(freespin):
-            self.spin(line_bet)
+            spin_result.add_sub_result(self.spin(SpinType.free, spin_result.line_bet))
             self.stat.total_freespins += 1
 
         self.stat.total_spins += 1
@@ -405,6 +420,7 @@ class SlotMachine:
         self.reserved_symbolset = None
         return tmp
 
+
 class BonusGame:
     def __init__(self):
         pass
@@ -472,9 +488,10 @@ class UnitTest(unittest.TestCase):
         print('total freespin :', m.stat.total_freespins)
         self.assertTrue(m.stat.total_freespins == 10)
 
+
 if __name__ == '__main__':
-    #machine = SlotMachine()
-    #machine.spin()
+    # machine = SlotMachine()
+    # machine.spin()
 
     suite = unittest.TestLoader().loadTestsFromTestCase(UnitTest)
     unittest.TextTestRunner(verbosity=2).run(suite)
