@@ -248,10 +248,18 @@ class ScatterWin:
         return "{}: x{} rwd={}".format(self.symbol, self.match, self.reward)
 
 
+class Stat:
+    def __init__(self):
+        self.total_reward = 0
+        self.total_spins = 0
+        self.total_freespins = 0
+
+
 class SlotMachine:
     def __init__(self):
         self.settings = SlotSetting()
         self.reel_size = len(self.settings.reels)
+        self.stat = Stat()
 
     def __row_len(self, reel):
         return len(self.settings.reels[reel])
@@ -357,15 +365,22 @@ class SlotMachine:
         return s_str
 
 
+class BonusGame:
+    def __init__(self):
+        pass
+
+
+class Freespin:
+    def __init__(self):
+        self.remain_spins = 0
+
+
 class UnitTest(unittest.TestCase):
     def setUp(self):
         pass
 
     def tearDown(self):
         pass
-
-    def fs(self, machine, code):
-        return machine.settings.find_symbol(code)
 
     @staticmethod
     def create_symbolset(machine, symbol_codes):
@@ -401,12 +416,19 @@ class UnitTest(unittest.TestCase):
         m = SlotMachine()
         test_symbolset = self.create_symbolset(m, ['SC', 'H1', 'H1', 'H1', 'H1',
                                                    'H1', 'SC', 'SC', 'H1', 'H1',
-                                                   'H2', 'SC', 'H1', 'H1', 'SC'])
+                                                   'H2', 'H2', 'H1', 'H1', 'SC'])
         print(m.str_symbolset(test_symbolset))
         wins = m.resolve_scatter_rewards(test_symbolset)
         print(wins)
         self.assertTrue(len(wins) == 1)
 
+    def test_freespin(self):
+        m = SlotMachine()
+        test_symbolset = self.create_symbolset(m, ['SC', 'H1', 'H1', 'H1', 'H1',
+                                                   'H1', 'SC', 'SC', 'H1', 'H1',
+                                                   'H2', 'SC', 'H1', 'H1', 'SC'])
+        m.reserve_symbolset(test_symbolset)
+        m.spin()
 
 if __name__ == '__main__':
     machine = SlotMachine()

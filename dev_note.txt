@@ -3,6 +3,10 @@ todos
 20171017
 -introduce wild
 -introduce scatter check
+state over multiple spins
+    필요시 player 외부객체 도입
+    일단 machine 내부 누적 데이터 관리
+        어쩔수 없이 spin() 마지막에서 stat 적립 처리
 setting validation
 introduce bonus game
 introduce freespin

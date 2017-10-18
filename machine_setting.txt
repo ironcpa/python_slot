@@ -32,7 +32,7 @@ H2 = 0 0 10 20 30
 [Scatters]
 SC = 3 2 0
 SC = 4 2 0
-SC = 5 2 0
+SC = 5 3 10
 
 [Reels]
 W1	1	H1	1	H1	1	H1	1	H1	1
