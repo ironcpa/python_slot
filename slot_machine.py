@@ -1,78 +1,6 @@
 # slot machine
+from slot_data import *
 from random import randrange
-from enum import Enum
-import unittest
-
-
-class Section(Enum):
-    none = 0
-    symbol = 1
-    layout = 2
-    payline = 3
-    paytable = 4
-    scatter = 5
-    reels = 6
-
-
-class RewardType(Enum):
-    none = 0
-    payout = 1
-    bonus_game = 2
-    freespin = 3
-
-
-class Symbol:
-    def __init__(self, code, bitflag, desc, is_wild):
-        self.code = code
-        self.bitflag = int(bitflag)
-        self.desc = desc
-        self.is_wild = True if is_wild == 1 else False
-
-    def __str__(self):
-        return self.code
-
-    def __repr__(self):
-        return self.code
-
-
-class Payline:
-    def __init__(self, id, reel_rows):
-        self.id = 0;
-        self.reel_rows = reel_rows
-        print('in payline constructor', self.reel_rows)
-
-    def __str__(self):
-        return "Payline"
-
-    def __repr__(self):
-        return str(self.id) + str(self.reel_rows)
-
-
-class Paytable:
-    def __init__(self, symbol_code, match, mul):
-        self.symbol_code = symbol_code
-        self.match = int(match)
-        self.mul = int(mul)
-
-    def __str__(self):
-        return "Paytable"
-
-    def __repr__(self):
-        return '{} {} {}'.format(self.symbol_code, self.match, self.mul)
-
-
-class ScatterReward:
-    def __init__(self, symbol, match, reward_type, reward_val):
-        self.symbol = symbol
-        self.match = int(match)
-        self.reward_type = int(reward_type)
-        self.reward_val = int(reward_val)
-
-
-class AbsPosPayline:
-    def __init__(self, id, *positions):
-        self.id = 0
-        self.positions = positions
 
 
 class SlotSetting:
@@ -222,65 +150,6 @@ class SlotSetting:
         return [x for x in self.scatter_rewards if x.symbol == symbol and x.match == match]
 
 
-class PaylineWin:
-    def __init__(self, line_id, symbol, match, multi):
-        self.line_id = line_id
-        self.symbol = symbol
-        self.match = match
-        self.multi = multi
-
-    def __repr__(self):
-        return "line={} {}x{} x{}".format(self.line_id, self.symbol, self.match, self.multi)
-
-    def __str__(self):
-        return self.__repr__()
-
-
-class ScatterWin:
-    def __init__(self, symbol, match, reward_type, reward):
-        self.symbol = symbol
-        self.match = match
-        self.reward_type = RewardType(reward_type)
-        self.reward = reward
-
-    def __str__(self):
-        return self.__repr__()
-
-    def __repr__(self):
-        return "{}: x{} rwd={}".format(self.symbol, self.match, self.reward)
-
-
-class ResultType(Enum):
-    base = 0
-    bonus_game = 1
-    free = 3
-
-
-class SpinResult:
-    def __init__(self, rtype, line_bet):
-        self.rtype = rtype
-        self.line_bet = line_bet
-        self.symbolset = None
-        self.sub_spin_results = []
-
-    def add_sub_result(self, spin_result):
-        self.sub_spin_results.append(spin_result)
-
-
-class BonusResult:
-    def __init__(self, rtype, line_bet):
-        self.rtype = rtype
-        self.line_bet = line_bet
-        self.payout = 0
-
-
-class Stat:
-    def __init__(self):
-        self.total_reward = 0
-        self.total_spins = 0
-        self.total_freespins = 0
-
-
 class SlotMachine:
     def __init__(self):
         self.settings = SlotSetting()
@@ -313,7 +182,7 @@ class SlotMachine:
 
         return symbolset
 
-    def spin(self, result_type = ResultType.base, line_bet=1):
+    def spin(self, result_type=ResultType.base, line_bet=1):
         rand_stop = self.create_rnd_stop()
         symbolset = self.create_symbolset(rand_stop)
         if self.reserved_symbolset is not None:
@@ -439,97 +308,6 @@ class SlotMachine:
         return tmp
 
 
-class BonusGame:
-    def __init__(self):
-        pass
-
-    def run(self, base_spin_result):
-        result = BonusResult(ResultType.bonus_game, base_spin_result.line_bet)
-        result.payout = 999         #test
-        return result
-
-
-class Freespin:
-    def __init__(self):
-        self.remain_spins = 0
-
-
-class UnitTest(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
-    @staticmethod
-    def create_symbolset(machine, symbol_codes):
-        reel_size = len(machine.settings.layout)
-        max_row = 3
-        symbolset = []
-        cur_pos = 0
-        for reel in range(0, reel_size):
-            symbolset.append([])
-            for row in range(0, max_row):
-                if row >= machine.settings.layout[reel]:
-                    continue
-                symbol = machine.settings.find_symbol(symbol_codes[cur_pos])
-                assert (symbol is not None), "Unknown symbol"
-                symbolset[reel].append(symbol)
-                cur_pos += 1
-        print('create_symbolset')
-        return symbolset
-
-    def test001_resolve_payout(self):
-        m = SlotMachine()
-        test_symbolset = self.create_symbolset(m, ['H1', 'H1', 'H1', 'H1', 'H1',
-                                                   'H1', 'H1', 'H1', 'H1', 'H1',
-                                                   'H1', 'H1', 'H1', 'H1', 'H1'])
-        wins = m.resolve_payout(test_symbolset)
-        total_payout = 0
-        for w in wins:
-            total_payout += w.multi
-        print(total_payout)
-        self.assertTrue(total_payout == 150)
-
-    def test002_resolve_scatter(self):
-        m = SlotMachine()
-        test_symbolset = self.create_symbolset(m, ['SC', 'H1', 'H1', 'H1', 'H1',
-                                                   'H1', 'SC', 'SC', 'H1', 'H1',
-                                                   'H2', 'H2', 'H1', 'H1', 'SC'])
-        print(m.str_symbolset(test_symbolset))
-        wins = m.resolve_scatter_rewards(test_symbolset)
-        print(wins)
-        self.assertTrue(len(wins) == 1)
-
-    def test_freespin(self):
-        m = SlotMachine()
-        test_symbolset = self.create_symbolset(m, ['SC', 'H1', 'H1', 'H1', 'H1',
-                                                   'H1', 'SC', 'SC', 'H1', 'H1',
-                                                   'H2', 'SC', 'H1', 'H1', 'SC'])
-        m.reserve_symbolset(test_symbolset)
-        m.spin()
-        print('total freespin :', m.stat.total_freespins)
-        self.assertTrue(m.stat.total_freespins == 10)
-
-    def test_bonus_game(self):
-        m = SlotMachine()
-        test_symbolset = self.create_symbolset(m, ['SC', 'H1', 'H1', 'H1', 'H1',
-                                                   'H1', 'SC', 'SC', 'H1', 'H1',
-                                                   'H2', 'H1', 'H1', 'H1', 'SC'])
-        m.reserve_symbolset(test_symbolset)
-        result = m.spin()
-        bonus_result_cnt = 0
-        for r in result.sub_spin_results:
-            if r.rtype is ResultType.bonus_game:
-                bonus_result_cnt += 1
-
-        print('total bonus hit', bonus_result_cnt)
-        self.assertTrue(bonus_result_cnt == 1)
-
-
 if __name__ == '__main__':
-    # machine = SlotMachine()
-    # machine.spin()
-
-    suite = unittest.TestLoader().loadTestsFromTestCase(UnitTest)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    machine = SlotMachine()
+    machine.spin()
